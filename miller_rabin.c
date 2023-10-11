@@ -17,8 +17,8 @@ uint64_t mod_add(uint64_t a, uint64_t b, uint64_t m)
     //a와 b가 m보다 크다면 m보다 작을 때 까지 m을 빼서 숫자를 맞춰준다.
     //문제는, 단순히 m을 계속 빼주기만 한다면 a와 b가 m에 비해 미친듯이 클 때, 이 과정이 느려 터졌다는것이다.
     //그러니까 빼지말고 모듈러 연산을 이용하자. 어차피 목적은 m의 나머지 집합에서 계산하는 것이다.
-    if (a >= m) a %= m;
-    if (b >= m) b %= m;
+    a %= m;
+    b %= m;
 
     //주석대로 a+b >= m인지 검사하는 과정. a+b가 오버플로우가 될 수 있으므로 이렇게 돌아서 계산한다.
     if (a >= m - b) return a - (m - b);
@@ -34,8 +34,8 @@ uint64_t mod_sub(uint64_t a, uint64_t b, uint64_t m)
     //a와 b가 m보다 크다면 m보다 작을 때 까지 m을 빼서 숫자를 맞춰준다.
     //문제는, 단순히 m을 계속 빼주기만 한다면 a와 b가 m에 비해 미친듯이 클 때, 이 과정이 느려 터졌다는것이다.
     //그러니까 빼지말고 모듈러 연산을 이용하자. 어차피 목적은 m의 나머지 집합에서 계산하는 것이다.
-    if (a >= m) a %= m;
-    if (b >= m) b %= m;
+    a %= m;
+    b %= m;
 
     //unsigned 자료형임을 유의. 음수가 되면 곤란하다.
     if (a < b) return m - b + a;
@@ -61,8 +61,8 @@ uint64_t mod_mul(uint64_t a, uint64_t b, uint64_t m)
     //a와 b가 m보다 크다면 m보다 작을 때 까지 m을 빼서 숫자를 맞춰준다.
     //문제는, 단순히 m을 계속 빼주기만 한다면 a와 b가 m에 비해 미친듯이 클 때, 이 과정이 느려 터졌다는것이다.
     //그러니까 빼지말고 모듈러 연산을 이용하자. 어차피 목적은 m의 나머지 집합에서 계산하는 것이다.
-    if (a >= m) a %= m;
-    if (b >= m) b %= m;
+    a %= m;
+    b %= m;
 
     while (b > 0)
     {
@@ -90,11 +90,11 @@ uint64_t mod_pow(uint64_t a, uint64_t b, uint64_t m)
 {
     uint64_t r = 1;
     
-    //a와 b가 m보다 크다면 m보다 작을 때 까지 m을 빼서 숫자를 맞춰준다.
-    //문제는, 단순히 m을 계속 빼주기만 한다면 a와 b가 m에 비해 미친듯이 클 때, 이 과정이 느려 터졌다는것이다.
-    //그러니까 빼지말고 모듈러 연산을 이용하자. 어차피 목적은 m의 나머지 집합에서 계산하는 것이다.
+    //여기선 b는 modular 연산 하면 안됨!!!!
+    //a는 커봐야 좋을 거 없으므로 modular 연산으로 크기 줄여주자
+    //양자 컴퓨터를 활용하여 Shor's Algorithm을 사용하면 power 연산에서 주기를 빠르게 발견할 수 있지만
+    //아직 양자컴퓨터가 불안정하기도 하고, 여기서 다룰 내용은 아니므로 스킵
     if (a >= m) a %= m;
-    if (b >= m) b %= m;
     while (b > 0)
     {
         if (b & 1) r = mod_mul(r, a, m);
@@ -127,7 +127,7 @@ int miller_rabin(uint64_t n)
     //입력 자료형이 uint64_t이므로 n이 2^64 미만임을 기대할 수 있다.(0 <= n <= 2^64 - 1)
     //따라서 Deterministic Miller Rabin 알고리즘에 의해 37까지의 소수에 대해서만 돌려보면 된다.
     unsigned int i, j; //반복문용 변수
-    uint64_t temp = n - 1, k = 0, q;
+    uint64_t temp = n - 1, k = 1, q;
 
     //입력 n은 n > 3의 홀수임이 보장되어 있다.(입력을 그렇게만 준다.)
     //(n-1) = 2^k * q를 만족하는 적당한 k와 q를 찾아야 한다.
@@ -135,7 +135,7 @@ int miller_rabin(uint64_t n)
     //q는 비트열에서 오른쪽에서 k자리 만큼 무시한 값이 된다.
     //예를 들어, 30이면 30 = 0b11110 이므로
     //k = 1, q = 0b1111 = 15가 되는 식
-    while(temp >= 0)
+    while(temp >= 1)
     {
         if (temp & 1) break;
         k++;
@@ -152,8 +152,8 @@ int miller_rabin(uint64_t n)
         if (mod_pow(a[i], q, n) == 1) return PRIME;
         for (j = 0; j < k - 1; j++)
         {
-            if (mod_pow(mod_pow(a[i], q, n), mod_pow(2, j, n), n) == n - 1) return COMPOSITE;
+            if (mod_pow(mod_pow(a[i], q, n), mod_pow(2, j, n), n) == n - 1) return PRIME;
         }
     }
-    return PRIME;
+    return COMPOSITE;
 }
