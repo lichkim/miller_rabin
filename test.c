@@ -21,7 +21,9 @@ int main(void)
     atomic_int total;
     struct timeval start, end;
     double elapsed;
-
+    
+    // miller_rabin(25);
+    // return 1;
     /*
      * 모듈러 연산 검증 
      */

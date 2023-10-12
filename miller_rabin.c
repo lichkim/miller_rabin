@@ -116,6 +116,18 @@ uint64_t mod_pow(uint64_t a, uint64_t b, uint64_t m)
  */
 const uint64_t a[BASELEN] = {2,3,5,7,11,13,17,19,23,29,31,37};
 
+int witness(uint64_t prime, uint64_t k, uint64_t q, uint64_t n)
+{   
+    int j = 0;
+    if (mod_pow(prime, q, n) == 1) return PRIME;
+
+    for (j = 0; j < k; j++)
+    {
+        if (mod_pow(mod_pow(prime, q, n), (uint64_t)(1 << j), n) == n - 1) return PRIME;
+    }
+
+    return COMPOSITE;
+}
 /*
  * miller_rabin() - Miller-Rabin Primality Test (deterministic version)
  *
@@ -126,14 +138,18 @@ int miller_rabin(uint64_t n)
 {
     //입력 자료형이 uint64_t이므로 n이 2^64 미만임을 기대할 수 있다.(0 <= n <= 2^64 - 1)
     //따라서 Deterministic Miller Rabin 알고리즘에 의해 37까지의 소수에 대해서만 돌려보면 된다.
-    uint64_t i, j; //반복문용 변수
+    uint64_t i; //반복문용 변수
     uint64_t temp = n - 1, k = 0, q;
 
-    //스켈레톤 주석에서는 n > 3이라고 하지만 테스트 코드에서 n=1, 2, 3도 주어진다.
-    //이 경우에 대한 예외 처리가 필요하다.
-    if (n == 1) return COMPOSITE;   //1은 소수 아니다.
-    if (n == 2) return PRIME;
-    if (n == 3) return PRIME;
+    //n <= 37에 대해서는 이미 있는 a 테이블을 이용하자.
+    if (n <= 37)
+    {
+        for (i = 0 ; i < BASELEN; i++)
+        {
+            if (n == a[i]) return PRIME;
+        }
+        return COMPOSITE;
+    }
 
     //또한 n이 홀수로 주어진다고 하는데 테스트 코드에서 짝수인 경우도 주어진다...
     //그러므로 이 경우도 예외처리로 빠른 계산을 진행하자.
@@ -159,12 +175,9 @@ int miller_rabin(uint64_t n)
     //여기서도 2^j에 대해서는 mod_pow 함수 쓰면 안됨!!!!!!
     for (i = 0; i < BASELEN; i++)
     {   
+        if (a[i] > n) break;
         //본격적인 알고리즘
-        if (mod_pow(a[i], q, n) == 1) return PRIME;
-        for (j = 0; j < k; j++)
-        {
-            if (mod_pow(mod_pow(a[i], q, n), (uint64_t)(1 << j), n) == n - 1) return PRIME;
-        }
+        if (witness(a[i], k, q, n) == COMPOSITE) return COMPOSITE;
     }
-    return COMPOSITE;
+    return PRIME;
 }
