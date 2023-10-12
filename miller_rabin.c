@@ -94,7 +94,7 @@ uint64_t mod_pow(uint64_t a, uint64_t b, uint64_t m)
     //a는 커봐야 좋을 거 없으므로 modular 연산으로 크기 줄여주자
     //양자 컴퓨터를 활용하여 Shor's Algorithm을 사용하면 power 연산에서 주기를 빠르게 발견할 수 있지만
     //아직 양자컴퓨터가 불안정하기도 하고, 여기서 다룰 내용은 아니므로 스킵
-    if (a >= m) a %= m;
+    a %= m;
     while (b > 0)
     {
         if (b & 1) r = mod_mul(r, a, m);
@@ -126,18 +126,28 @@ int miller_rabin(uint64_t n)
 {
     //입력 자료형이 uint64_t이므로 n이 2^64 미만임을 기대할 수 있다.(0 <= n <= 2^64 - 1)
     //따라서 Deterministic Miller Rabin 알고리즘에 의해 37까지의 소수에 대해서만 돌려보면 된다.
-    unsigned int i, j; //반복문용 변수
-    uint64_t temp = n - 1, k = 1, q;
+    uint64_t i, j; //반복문용 변수
+    uint64_t temp = n - 1, k = 0, q;
 
-    //입력 n은 n > 3의 홀수임이 보장되어 있다.(입력을 그렇게만 준다.)
+    //스켈레톤 주석에서는 n > 3이라고 하지만 테스트 코드에서 n=1, 2, 3도 주어진다.
+    //이 경우에 대한 예외 처리가 필요하다.
+    if (n == 1) return COMPOSITE;   //1은 소수 아니다.
+    if (n == 2) return PRIME;
+    if (n == 3) return PRIME;
+
+    //또한 n이 홀수로 주어진다고 하는데 테스트 코드에서 짝수인 경우도 주어진다...
+    //그러므로 이 경우도 예외처리로 빠른 계산을 진행하자.
+    if (!(n & 1)) return COMPOSITE;
+
+    //입력 n은 n > 3의 홀수임이 보장되어 있다.(위에서 조건에 맞지 않는 경우를 모두 걸렀다.)
     //(n-1) = 2^k * q를 만족하는 적당한 k와 q를 찾아야 한다.
     //(n-1)을 비트열로 표현했을 때, 가장 오른쪽에서 부터의 0의 갯수 = k
+    //n-1은 짝수이므로 k>=1임이 보장된다.
     //q는 비트열에서 오른쪽에서 k자리 만큼 무시한 값이 된다.
     //예를 들어, 30이면 30 = 0b11110 이므로
     //k = 1, q = 0b1111 = 15가 되는 식
-    while(temp >= 1)
+    while(!(temp & 1))
     {
-        if (temp & 1) break;
         k++;
         temp = temp >> 1;
     }
@@ -146,13 +156,14 @@ int miller_rabin(uint64_t n)
     //Probabilistic Miller Rabin Algorithm과 다르게 a를 확률적으로 결정하지 않는다.
     //대신, 37 이하의 모든 소수에 대해서 반복문을 돌린다.
     //이 소수들에 대해서는 글로벌 상수로 a가 선언되어 있으므로, 이걸 이용하자.
+    //여기서도 2^j에 대해서는 mod_pow 함수 쓰면 안됨!!!!!!
     for (i = 0; i < BASELEN; i++)
-    {
+    {   
         //본격적인 알고리즘
         if (mod_pow(a[i], q, n) == 1) return PRIME;
-        for (j = 0; j < k - 1; j++)
+        for (j = 0; j < k; j++)
         {
-            if (mod_pow(mod_pow(a[i], q, n), mod_pow(2, j, n), n) == n - 1) return PRIME;
+            if (mod_pow(mod_pow(a[i], q, n), (uint64_t)(1 << j), n) == n - 1) return PRIME;
         }
     }
     return COMPOSITE;

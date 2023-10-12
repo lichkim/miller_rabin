@@ -21,7 +21,7 @@ int main(void)
     atomic_int total;
     struct timeval start, end;
     double elapsed;
- 
+
     /*
      * 모듈러 연산 검증 
      */
